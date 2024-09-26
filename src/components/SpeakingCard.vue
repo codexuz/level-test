@@ -35,6 +35,11 @@
         <div class="text-center mt-5">
           <h2 class="text-slate-800 text-2xl">{{ speakingText }}</h2>
         </div>
+
+        <!---- Progress Bar ----->
+        <div class="flex flex-col items-center justify-center">
+        <Progress v-if="shoProgressBar"/>
+        </div>
         
         <!-- Audio Visualization -->
         <div v-if="showBar" class="flex flex-col items-center justify-center w-full">
@@ -62,9 +67,8 @@ import { ref, onMounted, useTemplateRef } from 'vue';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle, IonText, IonIcon, IonButton } from '@ionic/vue';
 import { micSharp } from 'ionicons/icons';
 import { AVMedia } from 'vue-audio-visual';
-import { RecordRTCPromisesHandler, getBlob } from 'recordrtc';
-
-
+import { RecordRTCPromisesHandler } from 'recordrtc';
+import Progress from './Progress.vue';
 // Media and Assets
 import Poster from '@/assets/audios/poster.png';
 import VideoIntro from '@/assets/audios/intro.mp4';
@@ -90,7 +94,9 @@ const showBar = ref(false)
 const isExamStarted = ref(false)
 const showTimerButton = ref(false);
 let stream = ref(null)
-let recorder = ref(null)
+let recorder = ref(null);
+const shoProgressBar = ref(false);
+const skipButton = ref(false)
 
 // Speaking Questions with Videos
 const speakingQuestions = ref([
@@ -139,15 +145,15 @@ function loadNextVideo() {
 // Move to the Next Question
 function nextQuestion() {
   currentIndex.value++;
-  skipButton.value = false
+  skipButton.value = false;
+  showBar.value = false 
   loadNextVideo();
 }
 
-const skipButton = ref(false)
 function skipQuestion () {
   skipButton.value = false
   showTimerButton.value = false;
-  nextQuestion();
+  stopRecording()
   stopTimer()
 }
 
@@ -164,7 +170,6 @@ function startTimer() {
     } else {
       clearInterval(interval);
       stopRecording(); // Stop recording after time reaches 0
-      nextQuestion(); // Load the next video
     }
   }, 1000);
 }
@@ -174,6 +179,8 @@ function stopTimer() {
   clearInterval(interval);
 }
 
+
+   
 
 async function startRecording () {
   stream.value = await navigator.mediaDevices.getUserMedia({audio: true});
@@ -188,9 +195,29 @@ async function startRecording () {
 
 async function stopRecording () {
   showBar.value = false;
+  shoProgressBar.value = true
+  skipButton.value = false
   showTimerButton.value = false;
-  let blob = recorder.value.stopRecording();
-  console.log(blob)
+  await recorder.value.stopRecording();
+   let blob = recorder.value.blob
+  await transcribeAudio(blob)
+}
+
+
+const transcribeAudio = async (blob) => {
+  const formData = new FormData();
+  formData.append("file", blob);
+  const res = await fetch("https://edumoacademy.uz/evaluate", {
+    method: 'POST',
+    body: formData
+  });
+
+  const data = await res.json();
+  console.log(data)
+  if(data){
+    shoProgressBar.value = false
+    nextQuestion();
+  }
 }
 
 onMounted( async() => {
