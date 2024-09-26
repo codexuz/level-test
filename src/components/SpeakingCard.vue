@@ -45,7 +45,7 @@
         <div class="w-full flex items-center justify-center gap-x- mb-3 mt-4">
           <ion-button v-if="showReadyButton" shape="round" @click="onReadyClick">I'm Ready</ion-button>
           <ion-button color="danger" v-if="showTimerButton" shape="round">
-            <div class="w-3 h-3 bg-white mr-2 rounded-full"></div>
+            <div class="w-3 h-3 bg-white mr-2 rounded-full animate-blink"></div>
             {{ time < 10 ? `00: 0${time}`: `00: ${time}` }}
           </ion-button>
           <button @click="skipQuestion" v-if="skipButton">
@@ -139,6 +139,7 @@ function loadNextVideo() {
 // Move to the Next Question
 function nextQuestion() {
   currentIndex.value++;
+  skipButton.value = false
   loadNextVideo();
 }
 
@@ -204,5 +205,21 @@ onMounted( async() => {
 video {
   width: 100%;
   max-width: 600px;
+}
+
+.animate-blink{
+  animation-name: blink;
+  animation-duration: 1.6s;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+@keyframes blink {
+  0%{
+    opacity: 1;
+  }
+  100%{
+    opacity: .2;
+  }
 }
 </style>
