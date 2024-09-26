@@ -1,0 +1,7 @@
+{
+  "name": "ImpulseLC Quiz App",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
