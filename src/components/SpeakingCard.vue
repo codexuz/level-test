@@ -34,6 +34,7 @@
         </div>
         <div class="text-center mt-5">
           <h2 class="text-slate-800 text-2xl">{{ speakingText }}</h2>
+          <p class="mt-6">{{ transcribedText }}</p>
         </div>
 
         <!---- Progress Bar ----->
@@ -96,7 +97,8 @@ const showTimerButton = ref(false);
 let stream = ref(null)
 let recorder = ref(null);
 const shoProgressBar = ref(false);
-const skipButton = ref(false)
+const skipButton = ref(false);
+const transcribedText = ref('')
 
 // Speaking Questions with Videos
 const speakingQuestions = ref([
@@ -215,7 +217,8 @@ const transcribeAudio = async (blob) => {
   const data = await res.json();
   console.log(data)
   if(data){
-    shoProgressBar.value = false
+    shoProgressBar.value = false;
+    transcribedText.value = data || ''
     nextQuestion();
   }
 }
