@@ -1,6 +1,6 @@
 <template>
   <!-- Introduction Section -->
-  <div v-show="!isSpeakingStart" class="mt-6 flex flex-col items-center justify-center w-full">
+  <div v-show="showIntro" class="mt-6 flex flex-col items-center justify-center w-full">
     <ion-card class="w-[95%] sm:w-[600px]">
       <ion-card-header class="ion-text-center">
         <ion-card-title>Speaking Section</ion-card-title>
@@ -57,19 +57,24 @@
           <button @click="skipQuestion" v-if="skipButton">
             <svg class="size-10 text-blue-600" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 16 16"><path fill="currentColor" d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.042-.018a.75.75 0 0 1-.018-1.042L9.94 8L6.22 4.28a.75.75 0 0 1 0-1.06"/></svg>
           </button>
+          <button v-if="finishButton">
+            Finish Exam
+          </button>
         </div>
       </ion-card-content>
     </ion-card>
   </div>
+  <ResultPage v-if="showResultPage" :gr_score="38" :score="4.5" level="Pre-Intermediate"/>
 </template>
 
 <script setup>
 import { ref, onMounted, useTemplateRef } from 'vue';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle, IonText, IonIcon, IonButton } from '@ionic/vue';
-import { micSharp } from 'ionicons/icons';
+import {  micSharp } from 'ionicons/icons';
 import { AVMedia } from 'vue-audio-visual';
 import { RecordRTCPromisesHandler } from 'recordrtc';
 import Progress from './Progress.vue';
+import ResultPage from './ResultPage.vue';
 // Media and Assets
 import Poster from '@/assets/audios/poster.png';
 import VideoIntro from '@/assets/audios/intro.mp4';
@@ -85,6 +90,7 @@ import Video8 from '@/assets/audios/8.mp4';
 
 
 // State Variables
+const showIntro = ref(true)
 const isSpeakingStart = ref(false);
 const currentIndex = ref(0);
 const videoRef = useTemplateRef('video')
@@ -99,7 +105,8 @@ let recorder = ref(null);
 const shoProgressBar = ref(false);
 const skipButton = ref(false);
 const transcribedText = ref('')
-
+const finishButton = ref(false);
+const showResultPage = ref(false)
 // Speaking Questions with Videos
 const speakingQuestions = ref([
   { video: VideoIntro, text: 'Welcome, My name is Elsa. I am your virtual examiner today?' },
@@ -116,6 +123,7 @@ const speakingQuestions = ref([
 // Start Speaking Section
 function startSpeaking() {
   isSpeakingStart.value = true;
+  showIntro.value = false
   loadNextVideo();
 }
 
@@ -146,10 +154,18 @@ function loadNextVideo() {
 
 // Move to the Next Question
 function nextQuestion() {
+  if (currentIndex.value < speakingQuestions.value.length -1) {
   currentIndex.value++;
   skipButton.value = false;
   showBar.value = false 
   loadNextVideo();
+  }
+  else{
+      showResultPage.value = true;
+      isSpeakingStart.value = false;
+      showIntro.value = false;
+      stopTimer()
+  }
 }
 
 function skipQuestion () {
@@ -197,7 +213,8 @@ async function startRecording () {
 
 async function stopRecording () {
   showBar.value = false;
-  shoProgressBar.value = true
+  shoProgressBar.value = true;
+  speakingText.value = "Processing your response..."
   skipButton.value = false
   showTimerButton.value = false;
   await recorder.value.stopRecording();
