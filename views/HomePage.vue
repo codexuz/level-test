@@ -107,7 +107,7 @@ import Logo from '@/assets/logo.png'
 import SpeakingCard from '../components/SpeakingCard.vue';
 import ResultPage from '../components/ResultPage.vue';
 
-const isGrammarPart = ref(false)
+const isGrammarPart = ref(true)
 const currentQuestionIndex = ref(0)
 const isStarted = ref(false);
 const selectedAnswer = ref(null); // To store the selected answer
