@@ -213,7 +213,9 @@ function finishAndStartSpeaking () {
 }
 
 
-
+onMounted ( async () => {
+   await store.loadResult();
+})
 
 
 // Mock data for quiz
