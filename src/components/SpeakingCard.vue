@@ -125,10 +125,6 @@ const speakingQuestions = ref([
 
 
 
-import { useStorage } from '@vueuse/core'
-const grScore = useStorage('gr_score');
-const newScore = JSON.parse(grScore.value)
-
 // Start Speaking Section
 function startSpeaking() {
   isSpeakingStart.value = true;
