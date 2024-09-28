@@ -64,7 +64,7 @@
       </ion-card-content>
     </ion-card>
   </div>
-  <ResultPage v-if="showResultPage" :gr_score="38" :score="4.5" level="Pre-Intermediate"/>
+  <ResultPage v-if="showResultPage" :gr_score="store.result.score" :score="4.5" :level="store.result.level"/>
 </template>
 
 <script setup>
@@ -75,6 +75,9 @@ import { AVMedia } from 'vue-audio-visual';
 import { RecordRTCPromisesHandler } from 'recordrtc';
 import Progress from './Progress.vue';
 import ResultPage from './ResultPage.vue';
+import { useStore } from '@/stores/store';
+const store = useStore();
+
 // Media and Assets
 import Poster from '@/assets/audios/poster.png';
 import VideoIntro from '@/assets/audios/intro.mp4';
@@ -119,6 +122,12 @@ const speakingQuestions = ref([
   { video: Video7, text: 'What is your favourite sport? And why do you like it?' },
   { video: Video8, text: 'What do you want to do in the future?' }
 ]);
+
+
+
+import { useStorage } from '@vueuse/core'
+const grScore = useStorage('gr_score');
+const newScore = JSON.parse(grScore.value)
 
 // Start Speaking Section
 function startSpeaking() {
@@ -241,6 +250,7 @@ const transcribeAudio = async (blob) => {
 }
 
 onMounted( async() => {
+  await store.loadResult()
   // Cleanup when component unmounts
   return () => {
     clearInterval(interval);

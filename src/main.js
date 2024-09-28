@@ -3,6 +3,7 @@ import App from './App.vue'
 import router from './router';
 import { AVPlugin } from "vue-audio-visual";
 import VueCountdown from '@chenfengyuan/vue-countdown';
+import { createPinia } from 'pinia'
 
 import { IonicVue } from '@ionic/vue';
 
@@ -36,12 +37,16 @@ import '@ionic/vue/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+
+const pinia = createPinia()
 const app = createApp(App)
   .use(IonicVue, {
     mode: 'ios'
   })
   .use(router)
   .use(AVPlugin)
+  .use(pinia)
+
 
   app.component(VueCountdown.name, VueCountdown);
 
