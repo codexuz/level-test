@@ -213,6 +213,10 @@ function finishAndStartSpeaking () {
 }
 
 
+  onMounted ( async () => {
+   await store.loadResult();
+  console.log(store.result.score)
+})
 
 
 
