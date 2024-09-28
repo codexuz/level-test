@@ -105,7 +105,8 @@ import { useFullscreen } from '@vueuse/core'
 import {bookOutline} from 'ionicons/icons';
 import Logo from '@/assets/logo.png'
 import SpeakingCard from '../components/SpeakingCard.vue';
-import ResultPage from '../components/ResultPage.vue';
+import { useStore } from '@/stores/store';
+const store = useStore();
 
 const isGrammarPart = ref(false)
 const currentQuestionIndex = ref(0)
@@ -143,7 +144,7 @@ function getValue(ev){
 
 let score = 0;
 
-function nextQuestion() {
+async function nextQuestion() {
 
   // Ensure the current question index is within the range of available questions
   if (currentQuestionIndex.value < quizQuestions.value.length-1) {
@@ -176,11 +177,30 @@ function nextQuestion() {
   } else {
     // Quiz has ended
     console.log('Quiz ended. Final score:', score);
+    let level = getGrammarLevel(score)
+    let result ={
+          score: score,
+          level: level
+        }
+
+    store.result = result
+    await store.saveResult() 
     finishAndStartSpeaking()
     
   }
 }
 
+
+
+function getGrammarLevel(score) {
+  if(score <= 20) {
+    return "Elementary";
+  } else if(score > 20 && score <= 30) {
+    return "Pre-Intermediate";
+  } else if(score > 30) {
+    return "Intermediate";
+  }
+}
 
 if(timer.value <=0){
   counting.value = false;
@@ -203,7 +223,7 @@ const quizQuestions = ref([
   { "text": "Paul is very ____. He’s very good at art.", "answers": ["honest", "friendly", "polite", "creative"], "correctAnswer": "creative" },
   { "text": "We live in the city centre and our house ____ have a big garden.", "answers": ["doesn’t", "isn’t", "aren’t", "don’t"], "correctAnswer": "doesn’t" },
   { "text": "I ____ arrive at school before nine o’clock.", "answers": ["has to", "have to", "doesn’t have to", "haven’t to"], "correctAnswer": "have to" },
-  { "text": "The beach was very crowded ____ Monday.", "answers": ["in", "on", "at", "to"], "correctAnswer": "on" },
+  { "text": "The beach was very crowded ____ Monday.", "answers": ["in", "on", "with", "to"], "correctAnswer": "on" },
   { "text": "You ____ eat all that cake! It isn’t good for you.", "answers": ["don’t", "may not", "shouldn’t", "will not"], "correctAnswer": "shouldn’t" },
   { "text": "Cathy ____ a game on her computer at the moment.", "answers": ["plays", "is playing", "to play", "play"], "correctAnswer": "is playing" },
   { "text": "There ____ a lot of people outside the school. What’s the problem?", "answers": ["are", "is", "be", "am"], "correctAnswer": "are" },
