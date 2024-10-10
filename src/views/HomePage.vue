@@ -108,7 +108,7 @@ import SpeakingCard from '../components/SpeakingCard.vue';
 import { useStore } from '@/stores/store';
 const store = useStore();
 
-const isGrammarPart = ref(false)
+const isGrammarPart = ref(true)
 const currentQuestionIndex = ref(0)
 const isStarted = ref(false);
 const selectedAnswer = ref(null); // To store the selected answer
@@ -180,7 +180,8 @@ async function nextQuestion() {
     let level = getGrammarLevel(score)
     let result ={
           score: score,
-          level: level
+          level: level,
+          band: 0
         }
 
     store.result = result
@@ -212,10 +213,10 @@ function finishAndStartSpeaking () {
   counting.value = false
 }
 
-
 onMounted ( async () => {
    await store.loadResult();
 })
+
 
 
 // Mock data for quiz

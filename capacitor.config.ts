@@ -2,11 +2,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.impulselc.uz',
-  appName: 'ImpulseLC Quiz App',
+  appName: 'ImpulseLC Level Test',
   webDir: 'dist',
   plugins: {
-    CapacitorJitsiMeet: {
-      url: 'https://meet.jit.si'
+    CapacitorHttp: {
+      enabled: true
     }
   }
 };

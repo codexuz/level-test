@@ -34,7 +34,6 @@
         </div>
         <div class="text-center mt-5">
           <h2 class="text-slate-800 text-2xl">{{ speakingText }}</h2>
-          <p class="mt-6">{{ transcribedText }}</p>
         </div>
 
         <!---- Progress Bar ----->
@@ -42,11 +41,6 @@
         <Progress v-if="shoProgressBar"/>
         </div>
         
-        <!-- Audio Visualization -->
-        <div v-if="showBar" class="flex flex-col items-center justify-center w-full">
-          <AVMedia :media="stream" type="frequ" :frequ-lnum="6" :frequ-line-cap="true" :line-width="2" :canv-width="30" :canv-height="30" line-color="#00ff00"/>
-        </div>
-
         <!-- Ready Button and Timer -->
         <div class="w-full flex items-center justify-center gap-x- mb-3 mt-4">
           <ion-button v-if="showReadyButton" shape="round" @click="onReadyClick">I'm Ready</ion-button>
@@ -64,17 +58,17 @@
       </ion-card-content>
     </ion-card>
   </div>
-  <ResultPage v-if="showResultPage" :gr_score="store.result.score" :score="4.5" :level="store.result.level"/>
+  <ResultPage v-if="showResultPage" :gr_score="store.result.score" :score="store.result.band" :level="store.result.level"/>
 </template>
 
 <script setup>
 import { ref, onMounted, useTemplateRef } from 'vue';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCardSubtitle, IonText, IonIcon, IonButton } from '@ionic/vue';
 import {  micSharp } from 'ionicons/icons';
-import { AVMedia } from 'vue-audio-visual';
-import { RecordRTCPromisesHandler } from 'recordrtc';
+import { VoiceRecorder  } from 'capacitor-voice-recorder';
 import Progress from './Progress.vue';
 import ResultPage from './ResultPage.vue';
+import { feedbackSpeaking } from '@/lib/openai';
 import { useStore } from '@/stores/store';
 const store = useStore();
 
@@ -100,16 +94,22 @@ const videoRef = useTemplateRef('video')
 const speakingText = ref('');
 const showReadyButton = ref(false);
 const time = ref(40);
-const showBar = ref(false)
 const isExamStarted = ref(false)
 const showTimerButton = ref(false);
-let stream = ref(null)
-let recorder = ref(null);
 const shoProgressBar = ref(false);
 const skipButton = ref(false);
-const transcribedText = ref('')
 const finishButton = ref(false);
 const showResultPage = ref(false)
+const answersArray = ref([])
+const providedFeedback = ref({
+  band: 0,
+  feed: '',
+  fluency: '',
+  coh: '',
+  grammar: '',
+  lex: ''
+});
+
 // Speaking Questions with Videos
 const speakingQuestions = ref([
   { video: VideoIntro, text: 'Welcome, My name is Elsa. I am your virtual examiner today?' },
@@ -122,6 +122,7 @@ const speakingQuestions = ref([
   { video: Video7, text: 'What is your favourite sport? And why do you like it?' },
   { video: Video8, text: 'What do you want to do in the future?' }
 ]);
+
 
 
 
@@ -158,11 +159,10 @@ function loadNextVideo() {
 }
 
 // Move to the Next Question
-function nextQuestion() {
+ async function nextQuestion() {
   if (currentIndex.value < speakingQuestions.value.length -1) {
   currentIndex.value++;
   skipButton.value = false;
-  showBar.value = false 
   loadNextVideo();
   }
   else{
@@ -170,6 +170,7 @@ function nextQuestion() {
       isSpeakingStart.value = false;
       showIntro.value = false;
       stopTimer()
+      await evaluateAnswers()
   }
 }
 
@@ -206,25 +207,43 @@ function stopTimer() {
    
 
 async function startRecording () {
-  stream.value = await navigator.mediaDevices.getUserMedia({audio: true});
-   recorder.value = new RecordRTCPromisesHandler(stream.value, {
-    type: 'audio/webm'
-   });
-  showBar.value = true;
-  showTimerButton.value = true;
-  recorder.value.startRecording();
-
+  try {
+        const permission = await VoiceRecorder.requestAudioRecordingPermission();
+        console.log(permission);
+        if (permission.value) {
+            showTimerButton.value = true;
+            await VoiceRecorder.startRecording();
+        } else {
+            alert('Audio recording permission denied');
+        }
+    } catch (error) {
+        console.error('Error starting recording:', error);
+    }
 }
 
 async function stopRecording () {
-  showBar.value = false;
   shoProgressBar.value = true;
   speakingText.value = "Processing your response..."
   skipButton.value = false
   showTimerButton.value = false;
-  await recorder.value.stopRecording();
-   let blob = recorder.value.blob
+  const recordingData = await VoiceRecorder.stopRecording();
+  const base64Sound = recordingData.value.recordDataBase64;
+  const mimeType = recordingData.value.mimeType;
+  const base64 = `data:${mimeType};base64,${base64Sound}`;
+  const blob = await convertBase64ToBlob(base64);
   await transcribeAudio(blob)
+}
+
+
+// Helper function to convert base64 to Blob
+async function convertBase64ToBlob(base64) {
+    try {
+        const response = await fetch(base64);
+        return await response.blob();
+    } catch (error) {
+        console.error('Error converting base64 to blob:', error);
+        throw error;
+    }
 }
 
 
@@ -240,9 +259,27 @@ const transcribeAudio = async (blob) => {
   console.log(data)
   if(data){
     shoProgressBar.value = false;
-    transcribedText.value = data || ''
+    const resData = {
+      q: speakingQuestions.value[currentIndex.value].text,
+      answer: data.transcription,
+    };
+    answersArray.value.push(resData);
+    console.log(answersArray.value)
     nextQuestion();
   }
+}
+
+
+async function evaluateAnswers() {
+  const formattedAnswers = answersArray.value.map((item, index) => {
+    return `Question ${index + 1}: ${item.q}\nAnswer: ${item.answer}\n`;
+  }).join("\n");
+ 
+  console.log(formattedAnswers)
+  const response = await feedbackSpeaking(formattedAnswers);
+  providedFeedback.value = JSON.parse(response) || "No feedback provided.\n\n"
+  console.log(providedFeedback.value.band);
+  await store.updateBand(providedFeedback.value.band);
 }
 
 onMounted( async() => {

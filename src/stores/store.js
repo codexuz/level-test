@@ -6,7 +6,8 @@ export const useStore = defineStore('main', {
     state: () => ({
         result: {
           score: 0,
-          level: ''
+          level: '',
+          band: 0
 
         }
     }),
@@ -20,9 +21,8 @@ export const useStore = defineStore('main', {
           async saveResult() {
             await Preferences.set({ key: 'result', value: JSON.stringify(this.result) });
           },
-          async updateResult(score, level) {
-            this.result.score = score;
-            this.result.level = level;
+          async updateBand(band) {
+            this.result.band = band;
             await this.saveResult();
           }
     }
